@@ -4,7 +4,6 @@ import 'openzeppelin-solidity/contracts/token/ERC721/ERC721Full.sol';
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "openzeppelin-solidity/contracts/access/roles/WhitelistedRole.sol";
 
-
 import "./Strings.sol";
 
 contract RendarToken is ERC721Full, WhitelistedRole {
@@ -25,22 +24,22 @@ contract RendarToken is ERC721Full, WhitelistedRole {
 
     string public tokenBaseURI = "https://ipfs.infura.io/ipfs/";
 
+    // Edition construct
+    struct EditionDetails {
+        uint256 editionId;        // top level edition identifier
+        uint256 editionSize;      // max size of the edition
+        uint256 editionSupply;    // number of tokens purchased from the edition
+        uint256 artistCommission; // commission the artist wants for this editions
+        address artistAccount;    // the account the send the commission to
+        string tokenURI;          // NFT token metadata URL
+        bool active;              // Edition is active or not
+    }
+
     // A count of the total number of token minted
     uint256 public totalTokensMinted;
 
     // A pointer to the last/highest edition number created
     uint256 public highestEditionNumber;
-
-    // Edition construct
-    struct EditionDetails {
-        uint256 editionId;
-        uint256 editionSize;
-        uint256 editionSupply;
-        uint256 artistCommission;
-        address artistAccount;
-        string tokenURI;
-        bool active;
-    }
 
     // tokenId : editionId
     mapping(uint256 => uint256) internal tokenIdToEditionId;
@@ -77,13 +76,14 @@ contract RendarToken is ERC721Full, WhitelistedRole {
     /////////////////
 
     constructor() ERC721Full("RendarToken", "RNDR") public {
+        super.addWhitelisted(msg.sender);
     }
 
     //////////////////////////////
     // Token Creation Functions //
     //////////////////////////////
 
-    function mintTokenTo(address _to, uint256 _editionId)
+    function mintTo(address _to, uint256 _editionId)
     onlyWhitelisted
     onlyValidEdition(_editionId)
     onlyAvailableEdition(_editionId)
@@ -98,8 +98,13 @@ contract RendarToken is ERC721Full, WhitelistedRole {
         return tokenId;
     }
 
-    function mintToken(uint256 _editionId) public returns (uint256 _tokenId) {
-        return mintTokenTo(msg.sender, _editionId);
+    function mint(uint256 _editionId) public returns (uint256 _tokenId) {
+        return mintTo(msg.sender, _editionId);
+    }
+
+    function burn(uint256 tokenId) public {
+        require(_isApprovedOrOwner(msg.sender, tokenId), "Caller is not owner nor approved");
+        _burn(tokenId);
     }
 
     //////////////////////////////////
@@ -140,8 +145,8 @@ contract RendarToken is ERC721Full, WhitelistedRole {
         editionIdToEditionDetails[_editionId] = EditionDetails(
             _editionId,
             _editionSize,
-            _artistCommission,
             0, // default non purchased
+            _artistCommission,
             _artistAccount,
             _tokenURI,
             true // default active
