@@ -16,7 +16,7 @@ contract('ERC721', function ([_, creator, tokenOwner, other, artistAccount, ...a
 
     describe('internal functions', function () {
         const editionId = new BN('100');
-        const tokenId = new BN('101');
+        const tokenId = new BN('100');
 
         describe('mintTo(address, uint256)', function () {
 

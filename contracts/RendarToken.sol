@@ -116,6 +116,9 @@ contract RendarToken is ERC721Full, WhitelistedRole {
     function _nextTokenId(uint256 _editionId) internal returns (uint256) {
         EditionDetails storage _editionDetails = editionIdToEditionDetails[_editionId];
 
+        // get next tokenID = max size + current supply
+        uint256 tokenId = _editionDetails.editionId.add(_editionDetails.editionSupply);
+
         // Bump number totalSupply
         _editionDetails.editionSupply = _editionDetails.editionSupply.add(1);
 
@@ -123,7 +126,7 @@ contract RendarToken is ERC721Full, WhitelistedRole {
         totalTokensMinted = totalTokensMinted.add(1);
 
         // Construct next token ID e.g. 100000 + 1 = ID of 100001 (this first in the edition set)
-        return _editionDetails.editionId.add(_editionDetails.editionSupply);
+        return tokenId;
     }
 
     function createEdition(

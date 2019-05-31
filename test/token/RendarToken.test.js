@@ -3,7 +3,7 @@ const {ZERO_ADDRESS} = constants;
 
 const RendarToken = artifacts.require('RendarToken.sol');
 
-contract('ERC721', function ([_, creator, tokenOwnerOne, tokenOwnerTwo, artistAccountOne, artistAccountTwo, ...accounts]) {
+contract.only('ERC721', function ([_, creator, tokenOwnerOne, tokenOwnerTwo, artistAccountOne, artistAccountTwo, ...accounts]) {
 
     const tokenURI = '123abc456def987';
 
@@ -17,8 +17,8 @@ contract('ERC721', function ([_, creator, tokenOwnerOne, tokenOwnerTwo, artistAc
         const editionSize = new BN('10');
         const commission = new BN('10');
 
-        const tokenIdOne = new BN('101');
-        const tokenIdTwo = new BN('102');
+        const tokenIdOne = new BN('100');
+        const tokenIdTwo = new BN('101');
 
         beforeEach(async function () {
 
@@ -211,6 +211,37 @@ contract('ERC721', function ([_, creator, tokenOwnerOne, tokenOwnerTwo, artistAc
                 _artistAccount.should.be.equal(artistAccountOne);
                 _tokenURI.should.be.equal('https://ipfs.infura.io/ipfs/123abc456def987');
                 _active.should.be.equal(true);
+            });
+
+        });
+
+        describe('can create multiple editions', async function () {
+
+            const editionIdTwo = new BN('200');
+            const editionSize = new BN('100');
+            const commission = new BN('10');
+
+            const editionTwotokenIdOne = new BN('200');
+            const editionTwotokenIdTwo = new BN('201');
+
+            beforeEach(async function () {
+                await this.token.createEdition(
+                    editionId,
+                    editionSize,
+                    commission,
+                    artistAccountOne,
+                    tokenURI,
+                    {from: creator}
+                );
+
+                await this.token.createEdition(
+                    editionIdTwo,
+                    editionSize,
+                    commission,
+                    artistAccountOne,
+                    tokenURI,
+                    {from: creator}
+                );
             });
 
         });
