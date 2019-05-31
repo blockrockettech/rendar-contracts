@@ -95,6 +95,8 @@ contract RendarToken is ERC721Full, WhitelistedRole {
         _mint(_to, tokenId);
         _setTokenURI(tokenId, editionIdToEditionDetails[tokenId].tokenURI);
 
+        tokenIdToEditionId[tokenId] = _editionId;
+
         return tokenId;
     }
 
@@ -222,11 +224,39 @@ contract RendarToken is ERC721Full, WhitelistedRole {
         return Strings.strConcat(tokenBaseURI, _editionDetails.tokenURI);
     }
 
-    function totalRemaining(uint256 _editionId)
+    function editionSize(uint256 _editionId)
     public view
     returns (uint256 _totalRemaining) {
         EditionDetails storage _editionDetails = editionIdToEditionDetails[_editionId];
-        return _editionDetails.editionSize.sub(_editionDetails.editionSupply);
+        return _editionDetails.editionSize;
+    }
+
+    function editionSupply(uint256 _editionId)
+    public view
+    returns (uint256 _editionSupply) {
+        EditionDetails storage _editionDetails = editionIdToEditionDetails[_editionId];
+        return _editionDetails.editionSupply;
+    }
+
+    function artistCommission(uint256 _editionId)
+    public view
+    returns (uint256 _artistCommission) {
+        EditionDetails storage _editionDetails = editionIdToEditionDetails[_editionId];
+        return _editionDetails.artistCommission;
+    }
+
+    function artistAccount(uint256 _editionId)
+    public view
+    returns (address _artistAccount) {
+        EditionDetails storage _editionDetails = editionIdToEditionDetails[_editionId];
+        return _editionDetails.artistAccount;
+    }
+
+    function active(uint256 _editionId)
+    public view
+    returns (bool _active) {
+        EditionDetails storage _editionDetails = editionIdToEditionDetails[_editionId];
+        return _editionDetails.active;
     }
 
     function editionDetails(uint256 _editionId) public view onlyValidEdition(_editionId)
@@ -247,6 +277,11 @@ contract RendarToken is ERC721Full, WhitelistedRole {
         _editionDetails.active,
         editionTokenUri(_editionId)
         );
+    }
+
+    function totalRemaining(uint256 _editionId) public view returns (uint256) {
+        EditionDetails storage _editionDetails = editionIdToEditionDetails[_editionId];
+        return _editionDetails.editionSize.sub(_editionDetails.editionSupply);
     }
 
     function tokenDetails(uint256 _tokenId) public view onlyValidTokenId(_tokenId)

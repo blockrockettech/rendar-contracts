@@ -4,7 +4,7 @@ const {ZERO_ADDRESS} = constants;
 const {shouldBehaveLikeERC721} = require('./ERC721.behavior');
 const RendarToken = artifacts.require('RendarToken.sol');
 
-contract.only('ERC721', function ([_, creator, tokenOwner, other, artistAccount, ...accounts]) {
+contract('ERC721', function ([_, creator, tokenOwner, other, artistAccount, ...accounts]) {
 
     const tokenURI = '123abc456def987';
 
