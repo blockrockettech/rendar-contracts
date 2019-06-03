@@ -1,12 +1,14 @@
 pragma solidity ^0.5.0;
 
-import 'openzeppelin-solidity/contracts/token/ERC721/ERC721Full.sol';
+import 'openzeppelin-solidity/contracts/token/ERC721/ERC721.sol';
+import 'openzeppelin-solidity/contracts/token/ERC721/ERC721Enumerable.sol';
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "openzeppelin-solidity/contracts/access/roles/WhitelistedRole.sol";
 
 import "./Strings.sol";
+import "./CustomERC721Metadata.sol";
 
-contract RendarToken is ERC721Full, WhitelistedRole {
+contract RendarToken is CustomERC721Metadata, WhitelistedRole {
     using SafeMath for uint256;
 
     ////////////
@@ -35,6 +37,10 @@ contract RendarToken is ERC721Full, WhitelistedRole {
         bool active;              // Edition is active or not
     }
 
+    // FIXME should this be configurable?
+    // Edition step
+    uint256 public editionStep = 1000;
+
     // A count of the total number of token minted
     uint256 public totalTokensMinted;
 
@@ -52,7 +58,7 @@ contract RendarToken is ERC721Full, WhitelistedRole {
     ///////////////
 
     modifier onlyActiveEdition(uint256 _editionId) {
-        require(editionIdToEditionDetails[_editionId].active, "Edition not active");
+        require(editionIdToEditionDetails[_editionId].active, "Edition disabled");
         _;
     }
 
@@ -75,7 +81,7 @@ contract RendarToken is ERC721Full, WhitelistedRole {
     // Constructor //
     /////////////////
 
-    constructor() ERC721Full("RendarToken", "RNDR") public {
+    constructor() CustomERC721Metadata("RendarToken", "RNDR") public {
         super.addWhitelisted(msg.sender);
     }
 
@@ -87,13 +93,12 @@ contract RendarToken is ERC721Full, WhitelistedRole {
     onlyWhitelisted
     onlyValidEdition(_editionId)
     onlyAvailableEdition(_editionId)
+    onlyActiveEdition(_editionId)
     public returns (uint256 _tokenId) {
-        require(editionIdToEditionDetails[_editionId].active, "Edition not active");
 
         uint256 tokenId = _nextTokenId(_editionId);
 
         _mint(_to, tokenId);
-        _setTokenURI(tokenId, editionIdToEditionDetails[tokenId].tokenURI);
 
         tokenIdToEditionId[tokenId] = _editionId;
 
@@ -113,24 +118,7 @@ contract RendarToken is ERC721Full, WhitelistedRole {
     // Edition Management Functions //
     //////////////////////////////////
 
-    function _nextTokenId(uint256 _editionId) internal returns (uint256) {
-        EditionDetails storage _editionDetails = editionIdToEditionDetails[_editionId];
-
-        // get next tokenID = max size + current supply
-        uint256 tokenId = _editionDetails.editionId.add(_editionDetails.editionSupply);
-
-        // Bump number totalSupply
-        _editionDetails.editionSupply = _editionDetails.editionSupply.add(1);
-
-        // Record another mint
-        totalTokensMinted = totalTokensMinted.add(1);
-
-        // Construct next token ID e.g. 100000 + 1 = ID of 100001 (this first in the edition set)
-        return tokenId;
-    }
-
     function createEdition(
-        uint256 _editionId,
         uint256 _editionSize,
         uint256 _artistCommission,
         address _artistAccount,
@@ -138,13 +126,13 @@ contract RendarToken is ERC721Full, WhitelistedRole {
     ) public onlyWhitelisted returns (bool _created) {
 
         // Guards for edition creation logic
-        require(_editionId != 0, "Edition ID missing");
-        require(_editionSize > 0, "Edition Size missing");
-        require(_artistCommission <= 100 && _artistCommission >= 0, "Artist commission invalid");
+        require(_editionSize > 0 && _editionSize <= editionStep, "Edition size invalid");
+        require(_artistCommission >= 0 && _artistCommission <= 100, "Artist commission invalid");
         require(_artistAccount != address(0), "Artist account missing");
-        require(bytes(_tokenURI).length != 0, "Base URI invalid");
+        require(bytes(_tokenURI).length != 0, "Token URI invalid");
 
-        require(editionIdToEditionDetails[_editionId].editionId == 0, "Edition ID already used");
+        // Generate new edition number based on step
+        uint256 _editionId = highestEditionNumber.add(editionStep);
 
         // Create edition
         editionIdToEditionDetails[_editionId] = EditionDetails(
@@ -163,6 +151,22 @@ contract RendarToken is ERC721Full, WhitelistedRole {
         emit EditionCreated(_editionId);
 
         return true;
+    }
+
+    function _nextTokenId(uint256 _editionId) internal returns (uint256) {
+        EditionDetails storage _editionDetails = editionIdToEditionDetails[_editionId];
+
+        // get next tokenID = max size + current supply
+        uint256 tokenId = _editionDetails.editionId.add(_editionDetails.editionSupply);
+
+        // Bump number totalSupply
+        _editionDetails.editionSupply = _editionDetails.editionSupply.add(1);
+
+        // Record another mint
+        totalTokensMinted = totalTokensMinted.add(1);
+
+        // Construct next token ID e.g. 100000 + 1 = ID of 100001 (this first in the edition set)
+        return tokenId;
     }
 
     function disableEdition(uint256 _editionId)
@@ -193,7 +197,7 @@ contract RendarToken is ERC721Full, WhitelistedRole {
         editionIdToEditionDetails[_editionId].artistCommission = _artistCommission;
     }
 
-    function updateTokenUri(uint256 _editionId, string calldata _tokenURI)
+    function updateEditionTokenUri(uint256 _editionId, string calldata _tokenURI)
     external
     onlyWhitelisted
     onlyValidEdition(_editionId) {

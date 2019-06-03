@@ -10,11 +10,11 @@ function shouldBehaveLikeERC721(
     [owner, approved, anotherApproved, operator, anyone]
 ) {
 
-    const editionId = new BN(100);
+    const editionId = new BN(1000);
     const artistAccount = operator;
 
-    const firstTokenId = new BN(101);
-    const secondTokenId = new BN(102);
+    const firstTokenId = new BN(1000);
+    const secondTokenId = new BN(1001);
     const unknownTokenId = new BN(999);
     const tokenURI = '123abc456def987';
 
@@ -24,7 +24,6 @@ function shouldBehaveLikeERC721(
 
         beforeEach(async function () {
             await this.token.createEdition(
-                editionId,
                 5,
                 50,
                 artistAccount,

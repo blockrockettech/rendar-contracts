@@ -15,14 +15,13 @@ contract('ERC721', function ([_, creator, tokenOwner, other, artistAccount, ...a
     shouldBehaveLikeERC721(creator, creator, accounts);
 
     describe('internal functions', function () {
-        const editionId = new BN('100');
-        const tokenId = new BN('100');
+        const editionId = new BN('1000');
+        const tokenId = new BN('1000');
 
         describe('mintTo(address, uint256)', function () {
 
             beforeEach(async function () {
                 await this.token.createEdition(
-                    editionId,
                     1,
                     50,
                     artistAccount,
@@ -61,7 +60,6 @@ contract('ERC721', function ([_, creator, tokenOwner, other, artistAccount, ...a
 
             beforeEach(async function () {
                 await this.token.createEdition(
-                    editionId,
                     1,
                     50,
                     artistAccount,
