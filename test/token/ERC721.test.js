@@ -9,7 +9,7 @@ contract('ERC721', function ([_, creator, tokenOwner, other, artistAccount, ...a
     const tokenURI = '123abc456def987';
 
     beforeEach(async function () {
-        this.token = await RendarToken.new({from: creator});
+        this.token = await RendarToken.new(other, {from: creator});
     });
 
     shouldBehaveLikeERC721(creator, creator, accounts);

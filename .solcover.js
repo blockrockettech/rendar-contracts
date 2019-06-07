@@ -3,6 +3,6 @@ module.exports = {
     skipFiles: [
         'Migrations.sol',
         'Strings.sol',
-        'ERC721ReceiverMock.sol'
+        'mock/ERC721ReceiverMock.sol'
     ]
 };

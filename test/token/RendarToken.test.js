@@ -1,15 +1,15 @@
-const {BN, constants, expectEvent, shouldFail, ether} = require('openzeppelin-test-helpers');
+const {BN, constants, expectEvent, shouldFail, ether, balance} = require('openzeppelin-test-helpers');
 const {ZERO_ADDRESS} = constants;
 
 const RendarToken = artifacts.require('RendarToken.sol');
 
-contract('Rendar Token Tests', function ([_, creator, tokenOwnerOne, tokenOwnerTwo, artistAccountOne, artistAccountTwo, ...accounts]) {
+contract('Rendar Token Tests', function ([_, creator, tokenOwnerOne, tokenOwnerTwo, artistAccountOne, artistAccountTwo, rendarAccount, ...accounts]) {
 
     const tokenURI = '123abc456def987';
     const editionPrice = ether('1');
 
     beforeEach(async function () {
-        this.token = await RendarToken.new({from: creator});
+        this.token = await RendarToken.new(rendarAccount, {from: creator});
     });
 
     describe('name() and symbol()', async function () {
@@ -88,6 +88,17 @@ contract('Rendar Token Tests', function ([_, creator, tokenOwnerOne, tokenOwnerT
             it('active()', async function () {
                 const active = await this.token.active(editionOneId);
                 active.should.be.equal(true);
+            });
+
+            it('editionPrice()', async function () {
+                const editionPrice = await this.token.editionPrice(editionOneId);
+                editionPrice.should.be.bignumber.equal(editionPrice);
+            });
+
+            it('artistInfo()', async function () {
+                const {_artistAccount, _artistCommission} = await this.token.artistInfo(editionOneId);
+                _artistAccount.should.be.equal(artistAccountOne);
+                _artistCommission.should.be.bignumber.equal(commission);
             });
 
             it('editionDetails()', async function () {
@@ -514,6 +525,16 @@ contract('Rendar Token Tests', function ([_, creator, tokenOwnerOne, tokenOwnerT
                 tokenURI.should.be.equal('https://ipfs.infura.io/ipfs/aaaaaaaaaa');
             });
 
+            it('can update edition price', async function () {
+                let editionPrice = await this.token.editionPrice(editionOneId);
+                editionPrice.should.be.bignumber.equal(editionPrice);
+
+                await this.token.updatePrice(editionOneId, new BN('2'), {from: creator});
+
+                editionPrice = await this.token.editionPrice(editionOneId);
+                editionPrice.should.be.bignumber.equal(new BN('2'));
+            });
+
             it('can update base URI', async function () {
                 let tokenURI = await this.token.editionTokenUri(editionOneId);
                 tokenURI.should.be.equal('https://ipfs.infura.io/ipfs/123abc456def987');
@@ -522,6 +543,16 @@ contract('Rendar Token Tests', function ([_, creator, tokenOwnerOne, tokenOwnerT
 
                 tokenURI = await this.token.editionTokenUri(editionOneId);
                 tokenURI.should.be.equal('https://new.ipfs.infura.io/123abc456def987');
+            });
+
+            it('can update base URI', async function () {
+                let existingAddress = await this.token.rendarAddress();
+                existingAddress.should.be.equal(rendarAccount);
+
+                await this.token.updateRendarAddress(tokenOwnerTwo, {from: creator});
+
+                existingAddress = await this.token.rendarAddress();
+                existingAddress.should.be.equal(tokenOwnerTwo);
             });
 
             it('cannot update base URI with empty value', async function () {
@@ -550,7 +581,7 @@ contract('Rendar Token Tests', function ([_, creator, tokenOwnerOne, tokenOwnerT
         });
     });
 
-    describe('purchasing editions', async function () {
+    describe('minting editions', async function () {
 
         const editionId = new BN('1000');
         const editionSize = new BN('5');
@@ -564,31 +595,6 @@ contract('Rendar Token Tests', function ([_, creator, tokenOwnerOne, tokenOwnerT
                 tokenURI,
                 {from: creator}
             );
-        });
-
-        it('can only purchase when edition is active', async function () {
-            const {logs} = await this.token.mintTo(tokenOwnerOne, editionId, {from: creator});
-            expectEvent.inLogs(logs, 'Transfer', {
-                from: ZERO_ADDRESS,
-                to: tokenOwnerOne,
-                tokenId: new BN('1000')
-            });
-
-            await this.token.disableEdition(editionId, {from: creator});
-
-            await shouldFail.reverting.withMessage(
-                this.token.mintTo(tokenOwnerOne, editionId, {from: creator}),
-                'Edition disabled'
-            );
-
-            await this.token.enableEdition(editionId, {from: creator});
-
-            const {logs: newLogs} = await this.token.mintTo(tokenOwnerOne, editionId, {from: creator});
-            expectEvent.inLogs(newLogs, 'Transfer', {
-                from: ZERO_ADDRESS,
-                to: tokenOwnerOne,
-                tokenId: new BN('1001')
-            });
         });
 
         it('can only mint with valid edition ID', async function () {
@@ -648,4 +654,322 @@ contract('Rendar Token Tests', function ([_, creator, tokenOwnerOne, tokenOwnerT
         });
 
     });
+
+    describe('purchasing editions', async function () {
+
+        const editionId = new BN('1000');
+        const editionSize = new BN('2');
+        const artistCommission = new BN('50');
+
+        const buyer = tokenOwnerOne;
+
+        describe('purchase()', async function () {
+
+            beforeEach(async function () {
+                await this.token.createEdition(
+                    editionSize,
+                    editionPrice,
+                    artistCommission,
+                    artistAccountOne,
+                    tokenURI,
+                    {from: creator}
+                );
+            });
+
+            it('fails if you dont provide enough ETH', async function () {
+                await shouldFail.reverting.withMessage(
+                    this.token.purchase(editionId, {from: buyer, value: ether('0.9999999')}),
+                    'Not enough ETH'
+                );
+            });
+
+            it('fails if the edition is disabled', async function () {
+                await this.token.disableEdition(editionId, {from: creator});
+
+                await shouldFail.reverting.withMessage(
+                    this.token.purchase(editionId, {from: buyer, value: ether('1')}),
+                    'Edition disabled'
+                );
+            });
+
+            it('fails if edition is sold out', async function () {
+                for (let i = 0; i < 2;) {
+                    const {logs} = await this.token.mintTo(tokenOwnerOne, editionId, {from: creator});
+                    expectEvent.inLogs(logs, 'Transfer', {
+                        from: ZERO_ADDRESS,
+                        to: tokenOwnerOne,
+                        tokenId: editionId.add(new BN(i))
+                    });
+                    i++;
+                }
+
+                await shouldFail.reverting.withMessage(
+                    this.token.purchase(editionId, {from: buyer, value: ether('1')}),
+                    'Edition sold out'
+                );
+            });
+
+            it('fails if edition ID is invalid', async function () {
+                await shouldFail.reverting.withMessage(
+                    this.token.purchase(new BN('9999'), {from: buyer, value: ether('1')}),
+                    'Edition disabled' // N.B as the active check validates true we see this message
+                );
+            });
+
+            it('once purchased you owned the token', async function () {
+                const tokenId = new BN('1000');
+
+                const {logs} = await this.token.purchase(editionId, {from: buyer, value: ether('1')});
+                expectEvent.inLogs(logs, 'Transfer', {
+                    from: ZERO_ADDRESS,
+                    to: buyer,
+                    tokenId: tokenId
+                });
+
+                const tokenOwner = await this.token.ownerOf(tokenId);
+                tokenOwner.should.be.equal(buyer);
+
+                const balanceOf = await this.token.balanceOf(buyer);
+                balanceOf.should.be.bignumber.equal('1');
+
+                const tokensOfOwner = await this.token.tokensOfOwner(buyer);
+                tokensOfOwner.map(val => val.toString()).should.be.deep.equal([tokenId.toString()]);
+
+                const {
+                    _editionId,
+                    _editionSize,
+                    _editionSupply,
+                    _artistAccount,
+                    _owner,
+                    _tokenURI
+                } = await this.token.tokenDetails(tokenId);
+
+                _editionId.should.be.bignumber.equal(_editionId);
+                _editionSize.should.be.bignumber.equal(editionSize);
+                _editionSupply.should.be.bignumber.equal('1');
+                _artistAccount.should.be.equal(artistAccountOne);
+                _owner.should.be.equal(buyer);
+                _tokenURI.should.be.equal('https://ipfs.infura.io/ipfs/123abc456def987');
+            });
+
+            it('funds are split accordingly', async function () {
+                const cost = ether('1');
+
+                const prePurchaseBuyerBalance = await balance.current(buyer);
+
+                const prePurchaseArtistsBalance = await balance.current(artistAccountOne);
+                const prePurchaseRendarBalance = await balance.current(rendarAccount);
+
+                const receipt = await this.token.purchase(editionId, {from: buyer, value: cost});
+                const gasCosts = await getGasCosts(receipt);
+
+                // check buyer sends monies
+                const postPurchaseBuyerBalance = await balance.current(buyer);
+                postPurchaseBuyerBalance.should.bignumber.equal(
+                    prePurchaseBuyerBalance
+                        .sub(cost)
+                        .sub(gasCosts)
+                );
+
+                //check render gets 50%
+                const postPurchaseArtistsBalance = await balance.current(artistAccountOne);
+                postPurchaseArtistsBalance.should.be.bignumber.equal(
+                    prePurchaseArtistsBalance.add(
+                        ether('0.5')
+                    )
+                );
+
+                //check artist gets 50%
+                const postPurchaseRendarBalance = await balance.current(rendarAccount);
+                postPurchaseRendarBalance.should.be.bignumber.equal(
+                    prePurchaseRendarBalance.add(
+                        ether('0.5')
+                    )
+                );
+            });
+        });
+
+        describe('purchaseTo()', async function () {
+
+            beforeEach(async function () {
+                await this.token.createEdition(
+                    editionSize,
+                    editionPrice,
+                    artistCommission,
+                    artistAccountOne,
+                    tokenURI,
+                    {from: creator}
+                );
+            });
+
+            it('fails if you dont provide enough ETH', async function () {
+                await shouldFail.reverting.withMessage(
+                    this.token.purchaseTo(buyer, editionId, {from: buyer, value: ether('0.9999999')}),
+                    'Not enough ETH'
+                );
+            });
+
+            it('fails if the edition is disabled', async function () {
+                await this.token.disableEdition(editionId, {from: creator});
+
+                await shouldFail.reverting.withMessage(
+                    this.token.purchaseTo(buyer, editionId, {from: buyer, value: ether('1')}),
+                    'Edition disabled'
+                );
+            });
+
+            it('fails if edition is sold out', async function () {
+                for (let i = 0; i < 2;) {
+                    const {logs} = await this.token.mintTo(tokenOwnerOne, editionId, {from: creator});
+                    expectEvent.inLogs(logs, 'Transfer', {
+                        from: ZERO_ADDRESS,
+                        to: tokenOwnerOne,
+                        tokenId: editionId.add(new BN(i))
+                    });
+                    i++;
+                }
+
+                await shouldFail.reverting.withMessage(
+                    this.token.purchaseTo(buyer, editionId, {from: buyer, value: ether('1')}),
+                    'Edition sold out'
+                );
+            });
+
+            it('fails if edition ID is invalid', async function () {
+                await shouldFail.reverting.withMessage(
+                    this.token.purchaseTo(buyer, new BN('9999'), {from: buyer, value: ether('1')}),
+                    'Edition disabled' // N.B as the active check validates true we see this message
+                );
+            });
+
+            it('once purchased you owned the token', async function () {
+                const tokenId = new BN('1000');
+
+                const {logs} = await this.token.purchaseTo(buyer, editionId, {from: buyer, value: ether('1')});
+                expectEvent.inLogs(logs, 'Transfer', {
+                    from: ZERO_ADDRESS,
+                    to: buyer,
+                    tokenId: tokenId
+                });
+
+                const tokenOwner = await this.token.ownerOf(tokenId);
+                tokenOwner.should.be.equal(buyer);
+
+                const balanceOf = await this.token.balanceOf(buyer);
+                balanceOf.should.be.bignumber.equal('1');
+
+                const tokensOfOwner = await this.token.tokensOfOwner(buyer);
+                tokensOfOwner.map(val => val.toString()).should.be.deep.equal([tokenId.toString()]);
+
+                const {
+                    _editionId,
+                    _editionSize,
+                    _editionSupply,
+                    _artistAccount,
+                    _owner,
+                    _tokenURI
+                } = await this.token.tokenDetails(tokenId);
+
+                _editionId.should.be.bignumber.equal(_editionId);
+                _editionSize.should.be.bignumber.equal(editionSize);
+                _editionSupply.should.be.bignumber.equal('1');
+                _artistAccount.should.be.equal(artistAccountOne);
+                _owner.should.be.equal(buyer);
+                _tokenURI.should.be.equal('https://ipfs.infura.io/ipfs/123abc456def987');
+            });
+
+            it('funds are split accordingly', async function () {
+                const cost = ether('1');
+
+                const prePurchaseBuyerBalance = await balance.current(buyer);
+
+                const prePurchaseArtistsBalance = await balance.current(artistAccountOne);
+                const prePurchaseRendarBalance = await balance.current(rendarAccount);
+
+                const receipt = await this.token.purchaseTo(buyer, editionId, {from: buyer, value: cost});
+                const gasCosts = await getGasCosts(receipt);
+
+                // check buyer sends monies
+                const postPurchaseBuyerBalance = await balance.current(buyer);
+                postPurchaseBuyerBalance.should.bignumber.equal(
+                    prePurchaseBuyerBalance
+                        .sub(cost)
+                        .sub(gasCosts)
+                );
+
+                //check render gets 50%
+                const postPurchaseArtistsBalance = await balance.current(artistAccountOne);
+                postPurchaseArtistsBalance.should.be.bignumber.equal(
+                    prePurchaseArtistsBalance.add(
+                        ether('0.5')
+                    )
+                );
+
+                //check artist gets 50%
+                const postPurchaseRendarBalance = await balance.current(rendarAccount);
+                postPurchaseRendarBalance.should.be.bignumber.equal(
+                    prePurchaseRendarBalance.add(
+                        ether('0.5')
+                    )
+                );
+            });
+        });
+
+    });
+
+    describe('adminBurn()', async function () {
+
+        const editionId = new BN('1000');
+        const buyer = tokenOwnerOne;
+
+        beforeEach(async function () {
+            await this.token.createEdition(
+                new BN('1'),
+                editionPrice,
+                new BN('50'),
+                artistAccountOne,
+                tokenURI,
+                {from: creator}
+            );
+        });
+
+        it('can burn token as admin when not owner', async function () {
+            const tokenId = new BN('1000');
+
+            const {logs} = await this.token.purchaseTo(buyer, editionId, {from: buyer, value: ether('1')});
+            expectEvent.inLogs(logs, 'Transfer', {
+                from: ZERO_ADDRESS,
+                to: buyer,
+                tokenId: tokenId
+            });
+
+            const tokenOwner = await this.token.ownerOf(tokenId);
+            tokenOwner.should.be.equal(buyer);
+
+            let balanceOf = await this.token.balanceOf(buyer);
+            balanceOf.should.be.bignumber.equal('1');
+
+            let tokensOfOwner = await this.token.tokensOfOwner(buyer);
+            tokensOfOwner.map(val => val.toString()).should.be.deep.equal([tokenId.toString()]);
+
+            await this.token.adminBurn(tokenId, {from: creator});
+
+            await shouldFail.reverting(
+                this.token.ownerOf(tokenId)
+            );
+
+            balanceOf = await this.token.balanceOf(buyer);
+            balanceOf.should.be.bignumber.equal('0');
+
+            tokensOfOwner = await this.token.tokensOfOwner(buyer);
+            tokensOfOwner.should.be.deep.equal([]);
+        });
+
+    });
+
+    async function getGasCosts(receipt) {
+        let tx = await web3.eth.getTransaction(receipt.tx);
+        let gasPrice = new BN(tx.gasPrice);
+        return gasPrice.mul(new BN(receipt.receipt.gasUsed));
+    }
 });

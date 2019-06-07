@@ -1,16 +1,15 @@
 const HDWalletProvider = require('truffle-hdwallet-provider');
 const {INFURA_KEY, MNEMONIC} = require('./constants');
 
-// Check gas prices before live deploy - https://ethgasstation.info/
-
 module.exports = {
-    mocha: {
-        reporter: 'eth-gas-reporter',
-        reporterOptions : {
-            currency: 'GBP',
-            gasPrice: 5
-        }
-    },
+    // N.B - this seems to crash solidity-coverage so its disabled
+    // mocha: {
+    //     reporter: 'eth-gas-reporter',
+    //     reporterOptions : {
+    //         currency: 'GBP',
+    //         gasPrice: 5
+    //     }
+    // },
     compilers: {
         solc: {
             version: '0.5.0',

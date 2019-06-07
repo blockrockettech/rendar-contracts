@@ -33,7 +33,7 @@ contract RendarToken is CustomERC721Metadata, WhitelistedRole {
         uint256 editionSupply;    // number of tokens purchased from the edition
         uint256 priceInWei;       // price per token for this edition
         uint256 artistCommission; // commission the artist wants for this editions
-        address artistAccount;    // the account the send the commission to
+        address payable artistAccount;    // the account the send the commission to
         bool active;              // Edition is active or not
         string tokenURI;          // NFT token metadata URL
     }
@@ -47,6 +47,9 @@ contract RendarToken is CustomERC721Metadata, WhitelistedRole {
 
     // A pointer to the last/highest edition number created
     uint256 public highestEditionNumber;
+
+    // Rendar commission account
+    address payable public rendarAddress;
 
     // tokenId : editionId
     mapping(uint256 => uint256) internal tokenIdToEditionId;
@@ -82,8 +85,9 @@ contract RendarToken is CustomERC721Metadata, WhitelistedRole {
     // Constructor //
     /////////////////
 
-    constructor() CustomERC721Metadata("RendarToken", "RNDR") public {
+    constructor(address payable _rendarAddress) CustomERC721Metadata("RendarToken", "RNDR") public {
         super.addWhitelisted(msg.sender);
+        rendarAddress = _rendarAddress;
     }
 
     //////////////////////////////
@@ -96,22 +100,47 @@ contract RendarToken is CustomERC721Metadata, WhitelistedRole {
 
     function purchaseTo(address _to, uint256 _editionId)
     onlyActiveEdition(_editionId)
-    onlyValidEdition(_editionId)
     onlyAvailableEdition(_editionId)
     public payable returns (uint256 _tokenId) {
-        require(msg.value >= editionIdToEditionDetails[_editionId].priceInWei, "Not enough ETH");
+        EditionDetails storage _editionDetails = editionIdToEditionDetails[_editionId];
+        require(msg.value >= _editionDetails.priceInWei, "Not enough ETH");
 
+        // Generate token
         uint256 tokenId = _internalMint(_to, _editionId);
 
-        // TODO funds splitter
+        // Split funds between Rendar and Artist
+        _splitFunds(_editionDetails.priceInWei, _editionDetails.artistAccount, _editionDetails.artistCommission);
 
         return tokenId;
     }
 
+    function _splitFunds(uint256 _priceInWei, address payable _artistsAccount, uint256 _artistsCommission) internal {
+        if (_priceInWei > 0) {
+
+            if (_artistsCommission > 0) {
+
+                uint256 artistPayment = _priceInWei.div(100).mul(_artistsCommission);
+                _artistsAccount.transfer(artistPayment);
+
+                uint256 remainingCommission = msg.value.sub(artistPayment);
+                rendarAddress.transfer(remainingCommission);
+            } else {
+
+                rendarAddress.transfer(msg.value);
+            }
+        }
+    }
+
+    /*
+     * Whitelist only function for minting tokens from an edition to the callers address, does not require payment
+     */
     function mint(uint256 _editionId) public returns (uint256 _tokenId) {
         return mintTo(msg.sender, _editionId);
     }
 
+    /*
+     * Whitelist only function for minting tokens from an edition to a specific address, does not require payment
+     */
     function mintTo(address _to, uint256 _editionId)
     onlyWhitelisted
     onlyValidEdition(_editionId)
@@ -120,6 +149,9 @@ contract RendarToken is CustomERC721Metadata, WhitelistedRole {
         return _internalMint(_to, _editionId);
     }
 
+    /*
+     * Whitelist only function for minting multiple tokens from an edition to a specific address, does not require payment
+     */
     function mintMultipleTo(address _to, uint256 _editionId, uint256 _total)
     onlyWhitelisted
     onlyValidEdition(_editionId)
@@ -135,7 +167,7 @@ contract RendarToken is CustomERC721Metadata, WhitelistedRole {
         return tokens;
     }
 
-    function _internalMint(address _to, uint256 _editionId) internal returns (uint256 _tokenId){
+    function _internalMint(address _to, uint256 _editionId) internal returns (uint256 _tokenId) {
         uint256 tokenId = _nextTokenId(_editionId);
 
         _mint(_to, tokenId);
@@ -145,9 +177,21 @@ contract RendarToken is CustomERC721Metadata, WhitelistedRole {
         return tokenId;
     }
 
+    /*
+     * Function for burning tokens if you are the owner
+     */
     function burn(uint256 tokenId) public {
         require(_isApprovedOrOwner(msg.sender, tokenId), "Caller is not owner nor approved");
         _burn(tokenId);
+        delete tokenIdToEditionId[tokenId];
+    }
+
+    /*
+     * Admin only function for burning tokens
+     */
+    function adminBurn(uint256 tokenId) onlyWhitelisted public {
+        _burn(tokenId);
+        delete tokenIdToEditionId[tokenId];
     }
 
     //////////////////////////////////
@@ -158,7 +202,7 @@ contract RendarToken is CustomERC721Metadata, WhitelistedRole {
         uint256 _editionSize,
         uint256 _priceInWei,
         uint256 _artistCommission,
-        address _artistAccount,
+        address payable _artistAccount,
         string memory _tokenURI
     ) public onlyWhitelisted returns (bool _created) {
 
@@ -221,7 +265,7 @@ contract RendarToken is CustomERC721Metadata, WhitelistedRole {
         editionIdToEditionDetails[_editionId].active = true;
     }
 
-    function updateArtistAccount(uint256 _editionId, address _artistAccount)
+    function updateArtistAccount(uint256 _editionId, address payable _artistAccount)
     external
     onlyWhitelisted
     onlyValidEdition(_editionId) {
@@ -253,14 +297,26 @@ contract RendarToken is CustomERC721Metadata, WhitelistedRole {
     // Management functions //
     //////////////////////////
 
-    function updateTokenBaseURI(string calldata _newBaseURI) external onlyWhitelisted {
+    function updateTokenBaseURI(string calldata _newBaseURI)
+    external
+    onlyWhitelisted {
         require(bytes(_newBaseURI).length != 0, "Base URI invalid");
         tokenBaseURI = _newBaseURI;
+    }
+
+    function updateRendarAddress(address payable _rendarAddress)
+    external
+    onlyWhitelisted {
+        rendarAddress = _rendarAddress;
     }
 
     ////////////////////////
     // Accessor functions //
     ////////////////////////
+
+    function tokensOfOwner(address owner) external view returns (uint256[] memory) {
+        return _tokensOfOwner(owner);
+    }
 
     function tokenURI(uint256 _tokenId)
     external view
