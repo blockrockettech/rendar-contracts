@@ -89,13 +89,36 @@ contract RendarToken is CustomERC721Metadata, WhitelistedRole {
     // Token Creation Functions //
     //////////////////////////////
 
+    function mint(uint256 _editionId) public returns (uint256 _tokenId) {
+        return mintTo(msg.sender, _editionId);
+    }
+
     function mintTo(address _to, uint256 _editionId)
     onlyWhitelisted
     onlyValidEdition(_editionId)
     onlyAvailableEdition(_editionId)
     onlyActiveEdition(_editionId)
     public returns (uint256 _tokenId) {
+        return _internalMint(_to, _editionId);
+    }
 
+    function mintMultipleTo(address _to, uint256 _editionId, uint256 _total)
+    onlyWhitelisted
+    onlyValidEdition(_editionId)
+    onlyActiveEdition(_editionId)
+    public returns (uint256[] memory _tokenIds) {
+
+        uint256 remainingInEdition = editionIdToEditionDetails[_editionId].editionSize - editionIdToEditionDetails[_editionId].editionSupply;
+        require(remainingInEdition >= _total, "Not enough left in edition");
+
+        uint256[] memory tokens;
+        for (uint i = 0; i < _total; i++) {
+            tokens[i] = _internalMint(_to, _editionId);
+        }
+        return tokens;
+    }
+
+    function _internalMint(address _to, uint256 _editionId) internal returns (uint256 _tokenId){
         uint256 tokenId = _nextTokenId(_editionId);
 
         _mint(_to, tokenId);
@@ -103,10 +126,6 @@ contract RendarToken is CustomERC721Metadata, WhitelistedRole {
         tokenIdToEditionId[tokenId] = _editionId;
 
         return tokenId;
-    }
-
-    function mint(uint256 _editionId) public returns (uint256 _tokenId) {
-        return mintTo(msg.sender, _editionId);
     }
 
     function burn(uint256 tokenId) public {

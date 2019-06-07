@@ -4,6 +4,13 @@ const {INFURA_KEY, MNEMONIC} = require('./constants');
 // Check gas prices before live deploy - https://ethgasstation.info/
 
 module.exports = {
+    mocha: {
+        reporter: 'eth-gas-reporter',
+        reporterOptions : {
+            currency: 'GBP',
+            gasPrice: 5
+        }
+    },
     compilers: {
         solc: {
             version: '0.5.0',

@@ -511,6 +511,20 @@ contract('Rendar Token Tests', function ([_, creator, tokenOwnerOne, tokenOwnerT
 
         });
 
+        describe('gas costing for createEdition()', async function () {
+            it('can call createEdition()', async function () {
+                const {logs} = await this.token.createEdition(
+                    editionSize,
+                    commission,
+                    artistAccountOne,
+                    tokenURI,
+                    {from: creator}
+                );
+                expectEvent.inLogs(logs, 'EditionCreated', {
+                    _editionId: new BN('1000')
+                });
+            });
+        });
     });
 
     describe('purchasing editions', async function () {
