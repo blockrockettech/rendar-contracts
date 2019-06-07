@@ -1,4 +1,4 @@
-const {BN, constants, expectEvent, shouldFail} = require('openzeppelin-test-helpers');
+const {BN, constants, expectEvent, shouldFail, ether} = require('openzeppelin-test-helpers');
 const {ZERO_ADDRESS} = constants;
 
 const RendarToken = artifacts.require('RendarToken.sol');
@@ -6,6 +6,7 @@ const RendarToken = artifacts.require('RendarToken.sol');
 contract('Rendar Token Tests', function ([_, creator, tokenOwnerOne, tokenOwnerTwo, artistAccountOne, artistAccountTwo, ...accounts]) {
 
     const tokenURI = '123abc456def987';
+    const editionPrice = ether('1');
 
     beforeEach(async function () {
         this.token = await RendarToken.new({from: creator});
@@ -36,6 +37,7 @@ contract('Rendar Token Tests', function ([_, creator, tokenOwnerOne, tokenOwnerT
             beforeEach(async function () {
                 await this.token.createEdition(
                     editionSize,
+                    editionPrice,
                     commission,
                     artistAccountOne,
                     tokenURI,
@@ -92,6 +94,7 @@ contract('Rendar Token Tests', function ([_, creator, tokenOwnerOne, tokenOwnerT
                 const {
                     _editionSize,
                     _editionSupply,
+                    _priceInWei,
                     _artistCommission,
                     _artistAccount,
                     _active,
@@ -99,6 +102,7 @@ contract('Rendar Token Tests', function ([_, creator, tokenOwnerOne, tokenOwnerT
                 } = await this.token.editionDetails(editionOneId);
                 _editionSize.should.be.bignumber.equal(editionSize);
                 _editionSupply.should.be.bignumber.equal('0');
+                _priceInWei.should.be.bignumber.equal(editionPrice);
                 _artistCommission.should.be.bignumber.equal(commission);
                 _artistAccount.should.be.equal(artistAccountOne);
                 _tokenURI.should.be.equal('https://ipfs.infura.io/ipfs/123abc456def987');
@@ -118,6 +122,7 @@ contract('Rendar Token Tests', function ([_, creator, tokenOwnerOne, tokenOwnerT
             beforeEach(async function () {
                 await this.token.createEdition(
                     editionSize,
+                    editionPrice,
                     commission,
                     artistAccountOne,
                     tokenURI,
@@ -126,6 +131,7 @@ contract('Rendar Token Tests', function ([_, creator, tokenOwnerOne, tokenOwnerT
 
                 await this.token.createEdition(
                     editionSize,
+                    editionPrice,
                     commission,
                     artistAccountOne,
                     tokenURI,
@@ -144,12 +150,14 @@ contract('Rendar Token Tests', function ([_, creator, tokenOwnerOne, tokenOwnerT
                         _editionSize,
                         _editionSupply,
                         _artistCommission,
+                        _priceInWei,
                         _artistAccount,
                         _active,
                         _tokenURI
                     } = await this.token.editionDetails(editionOneId);
                     _editionSize.should.be.bignumber.equal(editionSize);
                     _editionSupply.should.be.bignumber.equal('1');
+                    _priceInWei.should.be.bignumber.equal(editionPrice);
                     _artistCommission.should.be.bignumber.equal(commission);
                     _artistAccount.should.be.equal(artistAccountOne);
                     _tokenURI.should.be.equal('https://ipfs.infura.io/ipfs/123abc456def987');
@@ -196,6 +204,7 @@ contract('Rendar Token Tests', function ([_, creator, tokenOwnerOne, tokenOwnerT
                     const {
                         _editionSize,
                         _editionSupply,
+                        _priceInWei,
                         _artistCommission,
                         _artistAccount,
                         _active,
@@ -203,6 +212,7 @@ contract('Rendar Token Tests', function ([_, creator, tokenOwnerOne, tokenOwnerT
                     } = await this.token.editionDetails(editionTwoId);
                     _editionSize.should.be.bignumber.equal(editionSize);
                     _editionSupply.should.be.bignumber.equal('2');
+                    _priceInWei.should.be.bignumber.equal(editionPrice);
                     _artistCommission.should.be.bignumber.equal(commission);
                     _artistAccount.should.be.equal(artistAccountOne);
                     _tokenURI.should.be.equal('https://ipfs.infura.io/ipfs/123abc456def987');
@@ -245,6 +255,7 @@ contract('Rendar Token Tests', function ([_, creator, tokenOwnerOne, tokenOwnerT
             beforeEach(async function () {
                 await this.token.createEdition(
                     editionSize,
+                    editionPrice,
                     commission,
                     artistAccountOne,
                     tokenURI,
@@ -271,6 +282,7 @@ contract('Rendar Token Tests', function ([_, creator, tokenOwnerOne, tokenOwnerT
                 const {
                     _editionSize,
                     _editionSupply,
+                    _priceInWei,
                     _artistCommission,
                     _artistAccount,
                     _active,
@@ -279,6 +291,7 @@ contract('Rendar Token Tests', function ([_, creator, tokenOwnerOne, tokenOwnerT
                 _editionSize.should.be.bignumber.equal(editionSize);
                 _editionSupply.should.be.bignumber.equal('2');
                 _artistCommission.should.be.bignumber.equal(commission);
+                _priceInWei.should.be.bignumber.equal(editionPrice);
                 _artistAccount.should.be.equal(artistAccountOne);
                 _tokenURI.should.be.equal('https://ipfs.infura.io/ipfs/123abc456def987');
                 _active.should.be.equal(true);
@@ -338,6 +351,7 @@ contract('Rendar Token Tests', function ([_, creator, tokenOwnerOne, tokenOwnerT
                 const {
                     _editionSize,
                     _editionSupply,
+                    _priceInWei,
                     _artistCommission,
                     _artistAccount,
                     _active,
@@ -345,6 +359,7 @@ contract('Rendar Token Tests', function ([_, creator, tokenOwnerOne, tokenOwnerT
                 } = await this.token.editionDetails(editionOneId);
                 _editionSize.should.be.bignumber.equal(editionSize);
                 _editionSupply.should.be.bignumber.equal('10');
+                _priceInWei.should.be.bignumber.equal(editionPrice);
                 _artistCommission.should.be.bignumber.equal(commission);
                 _artistAccount.should.be.equal(artistAccountOne);
                 _tokenURI.should.be.equal('https://ipfs.infura.io/ipfs/123abc456def987');
@@ -359,6 +374,7 @@ contract('Rendar Token Tests', function ([_, creator, tokenOwnerOne, tokenOwnerT
                 await shouldFail.reverting.withMessage(
                     this.token.createEdition(
                         0,
+                        editionPrice,
                         commission,
                         artistAccountOne,
                         tokenURI,
@@ -372,6 +388,7 @@ contract('Rendar Token Tests', function ([_, creator, tokenOwnerOne, tokenOwnerT
                 await shouldFail.reverting.withMessage(
                     this.token.createEdition(
                         new BN('1001'),
+                        editionPrice,
                         commission,
                         artistAccountOne,
                         tokenURI,
@@ -385,6 +402,7 @@ contract('Rendar Token Tests', function ([_, creator, tokenOwnerOne, tokenOwnerT
                 await shouldFail.reverting.withMessage(
                     this.token.createEdition(
                         new BN('10'),
+                        editionPrice,
                         commission,
                         ZERO_ADDRESS,
                         tokenURI,
@@ -398,6 +416,7 @@ contract('Rendar Token Tests', function ([_, creator, tokenOwnerOne, tokenOwnerT
                 await shouldFail.reverting.withMessage(
                     this.token.createEdition(
                         new BN('10'),
+                        editionPrice,
                         new BN('-1'),
                         artistAccountOne,
                         tokenURI,
@@ -411,6 +430,7 @@ contract('Rendar Token Tests', function ([_, creator, tokenOwnerOne, tokenOwnerT
                 await shouldFail.reverting.withMessage(
                     this.token.createEdition(
                         new BN('10'),
+                        editionPrice,
                         new BN('101'),
                         artistAccountOne,
                         tokenURI,
@@ -424,6 +444,7 @@ contract('Rendar Token Tests', function ([_, creator, tokenOwnerOne, tokenOwnerT
                 await shouldFail.reverting.withMessage(
                     this.token.createEdition(
                         new BN('10'),
+                        editionPrice,
                         new BN('10'),
                         artistAccountOne,
                         '',
@@ -440,6 +461,7 @@ contract('Rendar Token Tests', function ([_, creator, tokenOwnerOne, tokenOwnerT
             beforeEach(async function () {
                 await this.token.createEdition(
                     editionSize,
+                    editionPrice,
                     commission,
                     artistAccountOne,
                     tokenURI,
@@ -515,6 +537,7 @@ contract('Rendar Token Tests', function ([_, creator, tokenOwnerOne, tokenOwnerT
             it('can call createEdition()', async function () {
                 const {logs} = await this.token.createEdition(
                     editionSize,
+                    editionPrice,
                     commission,
                     artistAccountOne,
                     tokenURI,
@@ -535,6 +558,7 @@ contract('Rendar Token Tests', function ([_, creator, tokenOwnerOne, tokenOwnerT
         beforeEach(async function () {
             await this.token.createEdition(
                 editionSize,
+                editionPrice,
                 new BN('10'),
                 artistAccountOne,
                 tokenURI,

@@ -1,4 +1,4 @@
-const {BN, constants, expectEvent, shouldFail} = require('openzeppelin-test-helpers');
+const {BN, constants, expectEvent, shouldFail, ether} = require('openzeppelin-test-helpers');
 const {ZERO_ADDRESS} = constants;
 
 const {shouldBehaveLikeERC721} = require('./ERC721.behavior');
@@ -17,12 +17,14 @@ contract('ERC721', function ([_, creator, tokenOwner, other, artistAccount, ...a
     describe('internal functions', function () {
         const editionId = new BN('1000');
         const tokenId = new BN('1000');
+        const editionPrice = ether('1');
 
         describe('mintTo(address, uint256)', function () {
 
             beforeEach(async function () {
                 await this.token.createEdition(
                     1,
+                    editionPrice,
                     50,
                     artistAccount,
                     tokenURI,
@@ -57,10 +59,12 @@ contract('ERC721', function ([_, creator, tokenOwner, other, artistAccount, ...a
         });
 
         describe('_burn(uint256)', function () {
+            const editionPrice = ether('1');
 
             beforeEach(async function () {
                 await this.token.createEdition(
                     1,
+                    editionPrice,
                     50,
                     artistAccount,
                     tokenURI,

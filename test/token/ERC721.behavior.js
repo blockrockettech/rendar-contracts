@@ -1,4 +1,4 @@
-const {BN, constants, expectEvent, shouldFail} = require('openzeppelin-test-helpers');
+const {BN, constants, expectEvent, shouldFail, ether} = require('openzeppelin-test-helpers');
 const {ZERO_ADDRESS} = constants;
 const {shouldSupportInterfaces} = require('./SupportsInterface.behavior');
 
@@ -11,6 +11,7 @@ function shouldBehaveLikeERC721(
 ) {
 
     const editionId = new BN(1000);
+    const editionPrice = ether('1');
     const artistAccount = operator;
 
     const firstTokenId = new BN(1000);
@@ -25,6 +26,7 @@ function shouldBehaveLikeERC721(
         beforeEach(async function () {
             await this.token.createEdition(
                 5,
+                editionPrice,
                 50,
                 artistAccount,
                 tokenURI,

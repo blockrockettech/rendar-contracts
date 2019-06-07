@@ -31,10 +31,11 @@ contract RendarToken is CustomERC721Metadata, WhitelistedRole {
         uint256 editionId;        // top level edition identifier
         uint256 editionSize;      // max size of the edition
         uint256 editionSupply;    // number of tokens purchased from the edition
+        uint256 priceInWei;       // price per token for this edition
         uint256 artistCommission; // commission the artist wants for this editions
         address artistAccount;    // the account the send the commission to
-        string tokenURI;          // NFT token metadata URL
         bool active;              // Edition is active or not
+        string tokenURI;          // NFT token metadata URL
     }
 
     // FIXME should this be configurable?
@@ -89,6 +90,24 @@ contract RendarToken is CustomERC721Metadata, WhitelistedRole {
     // Token Creation Functions //
     //////////////////////////////
 
+    function purchase(uint256 _editionId) public payable returns (uint256 _tokenId) {
+        return purchaseTo(msg.sender, _editionId);
+    }
+
+    function purchaseTo(address _to, uint256 _editionId)
+    onlyActiveEdition(_editionId)
+    onlyValidEdition(_editionId)
+    onlyAvailableEdition(_editionId)
+    public payable returns (uint256 _tokenId) {
+        require(msg.value >= editionIdToEditionDetails[_editionId].priceInWei, "Not enough ETH");
+
+        uint256 tokenId = _internalMint(_to, _editionId);
+
+        // TODO funds splitter
+
+        return tokenId;
+    }
+
     function mint(uint256 _editionId) public returns (uint256 _tokenId) {
         return mintTo(msg.sender, _editionId);
     }
@@ -97,7 +116,6 @@ contract RendarToken is CustomERC721Metadata, WhitelistedRole {
     onlyWhitelisted
     onlyValidEdition(_editionId)
     onlyAvailableEdition(_editionId)
-    onlyActiveEdition(_editionId)
     public returns (uint256 _tokenId) {
         return _internalMint(_to, _editionId);
     }
@@ -105,7 +123,6 @@ contract RendarToken is CustomERC721Metadata, WhitelistedRole {
     function mintMultipleTo(address _to, uint256 _editionId, uint256 _total)
     onlyWhitelisted
     onlyValidEdition(_editionId)
-    onlyActiveEdition(_editionId)
     public returns (uint256[] memory _tokenIds) {
 
         uint256 remainingInEdition = editionIdToEditionDetails[_editionId].editionSize - editionIdToEditionDetails[_editionId].editionSupply;
@@ -139,6 +156,7 @@ contract RendarToken is CustomERC721Metadata, WhitelistedRole {
 
     function createEdition(
         uint256 _editionSize,
+        uint256 _priceInWei,
         uint256 _artistCommission,
         address _artistAccount,
         string memory _tokenURI
@@ -158,10 +176,11 @@ contract RendarToken is CustomERC721Metadata, WhitelistedRole {
             _editionId,
             _editionSize,
             0, // default non purchased
+            _priceInWei,
             _artistCommission,
             _artistAccount,
-            _tokenURI,
-            true // default active
+            true, // default active
+            _tokenURI
         );
 
         highestEditionNumber = _editionId;
@@ -223,6 +242,13 @@ contract RendarToken is CustomERC721Metadata, WhitelistedRole {
         editionIdToEditionDetails[_editionId].tokenURI = _tokenURI;
     }
 
+    function updatePrice(uint256 _editionId, uint256 _priceInWei)
+    external
+    onlyWhitelisted
+    onlyValidEdition(_editionId) {
+        editionIdToEditionDetails[_editionId].priceInWei = _priceInWei;
+    }
+
     //////////////////////////
     // Management functions //
     //////////////////////////
@@ -264,6 +290,20 @@ contract RendarToken is CustomERC721Metadata, WhitelistedRole {
         return _editionDetails.editionSupply;
     }
 
+    function editionPrice(uint256 _editionId)
+    public view
+    returns (uint256 _priceInWei) {
+        EditionDetails storage _editionDetails = editionIdToEditionDetails[_editionId];
+        return _editionDetails.priceInWei;
+    }
+
+    function artistInfo(uint256 _editionId)
+    public view
+    returns (address _artistAccount, uint256 _artistCommission) {
+        EditionDetails storage _editionDetails = editionIdToEditionDetails[_editionId];
+        return (_editionDetails.artistAccount, _editionDetails.artistCommission);
+    }
+
     function artistCommission(uint256 _editionId)
     public view
     returns (uint256 _artistCommission) {
@@ -289,6 +329,7 @@ contract RendarToken is CustomERC721Metadata, WhitelistedRole {
     returns (
         uint256 _editionSize,
         uint256 _editionSupply,
+        uint256 _priceInWei,
         uint256 _artistCommission,
         address _artistAccount,
         bool _active,
@@ -298,10 +339,11 @@ contract RendarToken is CustomERC721Metadata, WhitelistedRole {
         return (
         _editionDetails.editionSize,
         _editionDetails.editionSupply,
+        _editionDetails.priceInWei,
         _editionDetails.artistCommission,
         _editionDetails.artistAccount,
         _editionDetails.active,
-        editionTokenUri(_editionId)
+        Strings.strConcat(tokenBaseURI, _editionDetails.tokenURI)
         );
     }
 
