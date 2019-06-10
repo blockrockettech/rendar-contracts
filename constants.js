@@ -1,8 +1,7 @@
 const HDWalletProvider = require('truffle-hdwallet-provider');
 const mnemonic = process.env.RENDAR_MNEMONIC;
 
-// FIXME sign up to Infura
-const INFURA_KEY = 'TODO';
+const INFURA_KEY = '5e5f1bf73235421ab0669341615bad11';
 
 module.exports = {
     INFURA_KEY: INFURA_KEY,

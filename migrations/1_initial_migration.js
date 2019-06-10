@@ -1,5 +1,7 @@
-const Migrations = artifacts.require("Migrations");
+const {getAccountOne} = require('../constants');
 
-module.exports = function(deployer) {
-  deployer.deploy(Migrations);
+const Migrations = artifacts.require('Migrations');
+
+module.exports = async function (deployer, network, accounts) {
+    await deployer.deploy(Migrations, {from: getAccountOne(accounts, network)});
 };
