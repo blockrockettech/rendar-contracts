@@ -45,6 +45,12 @@ contract('Rendar Token Tests', function ([_, creator, tokenOwnerOne, tokenOwnerT
                 );
             });
 
+            it('allEditions()', async function () {
+                const allEditions = await this.token.allEditions();
+                allEditions.should.have.length(1);
+                allEditions[0].should.be.bignumber.equal(editionOneId);
+            });
+
             it('totalRemaining()', async function () {
                 const totalRemaining = await this.token.totalRemaining(editionOneId);
                 totalRemaining.should.be.bignumber.equal('10');
@@ -148,6 +154,16 @@ contract('Rendar Token Tests', function ([_, creator, tokenOwnerOne, tokenOwnerT
                     tokenURI,
                     {from: creator}
                 );
+            });
+
+
+            it('allEditions()', async function () {
+                const allEditions = await this.token.allEditions();
+                allEditions.should.have.length(2);
+                allEditions.map(e => e.toString()).should.be.deep.equal([
+                    editionOneId.toString(),
+                    editionTwoId.toString()
+                ]);
             });
 
             describe(`Edition (${editionOneId})`, async function () {

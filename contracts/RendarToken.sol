@@ -28,14 +28,14 @@ contract RendarToken is CustomERC721Metadata, WhitelistedRole {
 
     // Edition construct
     struct EditionDetails {
-        uint256 editionId;        // top level edition identifier
-        uint256 editionSize;      // max size of the edition
-        uint256 editionSupply;    // number of tokens purchased from the edition
-        uint256 priceInWei;       // price per token for this edition
-        uint256 artistCommission; // commission the artist wants for this editions
-        address payable artistAccount;    // the account the send the commission to
-        bool active;              // Edition is active or not
-        string tokenURI;          // NFT token metadata URL
+        uint256 editionId;              // top level edition identifier
+        uint256 editionSize;            // max size of the edition
+        uint256 editionSupply;          // number of tokens purchased from the edition
+        uint256 priceInWei;             // price per token for this edition
+        uint256 artistCommission;       // commission the artist wants for this editions
+        address payable artistAccount;  // the account the send the commission to
+        bool active;                    // Edition is active or not
+        string tokenURI;                // NFT token metadata URL
     }
 
     // FIXME should this be configurable?
@@ -47,6 +47,9 @@ contract RendarToken is CustomERC721Metadata, WhitelistedRole {
 
     // A pointer to the last/highest edition number created
     uint256 public highestEditionNumber;
+
+    // A list of all created editions
+    uint256[] public createdEditions;
 
     // Rendar commission account
     address payable public rendarAddress;
@@ -229,6 +232,8 @@ contract RendarToken is CustomERC721Metadata, WhitelistedRole {
 
         highestEditionNumber = _editionId;
 
+        createdEditions.push(_editionId);
+
         // Emit event
         emit EditionCreated(_editionId);
 
@@ -379,6 +384,10 @@ contract RendarToken is CustomERC721Metadata, WhitelistedRole {
     returns (bool _active) {
         EditionDetails storage _editionDetails = editionIdToEditionDetails[_editionId];
         return _editionDetails.active;
+    }
+
+    function allEditions() public view returns (uint256[] memory _editionIds) {
+        return createdEditions;
     }
 
     function editionDetails(uint256 _editionId) public view onlyValidEdition(_editionId)
