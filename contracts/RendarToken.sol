@@ -60,6 +60,11 @@ contract RendarToken is CustomERC721Metadata, WhitelistedRole {
     // editionId : EditionDetails
     mapping(uint256 => EditionDetails) internal editionIdToEditionDetails;
 
+    // artistAccount : [editionId, editionId]
+    mapping(address => uint256[]) internal artistToEditionIds;
+    // editionId => editionId
+    mapping(uint256 => uint256) internal editionIdToArtistIndex;
+
     ///////////////
     // Modifiers //
     ///////////////
@@ -234,6 +239,8 @@ contract RendarToken is CustomERC721Metadata, WhitelistedRole {
 
         createdEditions.push(_editionId);
 
+        updateArtistLookupData(_artistAccount, _editionId);
+
         // Emit event
         emit EditionCreated(_editionId);
 
@@ -274,7 +281,24 @@ contract RendarToken is CustomERC721Metadata, WhitelistedRole {
     external
     onlyWhitelisted
     onlyValidEdition(_editionId) {
-        editionIdToEditionDetails[_editionId].artistAccount = _artistAccount;
+
+        EditionDetails storage _originalEditionDetails = editionIdToEditionDetails[_editionId];
+
+        uint256 editionArtistIndex = editionIdToArtistIndex[_editionId];
+
+        // Get list of editions old artist works with
+        uint256[] storage editionIdsForArtist = artistToEditionIds[_originalEditionDetails.artistAccount];
+
+        // Remove edition from artists lists
+        delete editionIdsForArtist[editionArtistIndex];
+
+        // Add new artists to the list
+        uint256 newArtistsEditionIndex = artistToEditionIds[_artistAccount].length;
+        artistToEditionIds[_artistAccount].push(_editionId);
+        editionIdToArtistIndex[_editionId] = newArtistsEditionIndex;
+
+        // Update the edition
+        _originalEditionDetails.artistAccount = _artistAccount;
     }
 
     function updateArtistCommission(uint256 _editionId, uint256 _artistCommission)
@@ -296,6 +320,12 @@ contract RendarToken is CustomERC721Metadata, WhitelistedRole {
     onlyWhitelisted
     onlyValidEdition(_editionId) {
         editionIdToEditionDetails[_editionId].priceInWei = _priceInWei;
+    }
+
+    function updateArtistLookupData(address artistAccount, uint256 editionId) internal {
+        uint256 artistEditionIndex = artistToEditionIds[artistAccount].length;
+        artistToEditionIds[artistAccount].push(editionId);
+        editionIdToArtistIndex[editionId] = artistEditionIndex;
     }
 
     //////////////////////////
@@ -388,6 +418,10 @@ contract RendarToken is CustomERC721Metadata, WhitelistedRole {
 
     function allEditions() public view returns (uint256[] memory _editionIds) {
         return createdEditions;
+    }
+
+    function artistsEditions(address _artistsAccount) public view returns (uint256[] memory _editionIds) {
+        return artistToEditionIds[_artistsAccount];
     }
 
     function editionDetails(uint256 _editionId) public view onlyValidEdition(_editionId)

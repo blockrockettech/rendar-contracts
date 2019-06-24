@@ -166,6 +166,19 @@ contract('Rendar Token Tests', function ([_, creator, tokenOwnerOne, tokenOwnerT
                 ]);
             });
 
+            it('artistsEditions() list is updated', async function () {
+                const artistsEditions = await this.token.artistsEditions(artistAccountOne);
+                artistsEditions.map(e => e.toString()).should.be.deep.equal([
+                    editionOneId.toString(),
+                    editionTwoId.toString()
+                ]);
+            });
+
+            it('artistsEditions() list is empty when nothing ius created', async function () {
+                const artistsEditions = await this.token.artistsEditions(artistAccountTwo);
+                artistsEditions.should.be.deep.equal([]);
+            });
+
             describe(`Edition (${editionOneId})`, async function () {
 
                 beforeEach(async function () {
@@ -578,6 +591,30 @@ contract('Rendar Token Tests', function ([_, creator, tokenOwnerOne, tokenOwnerT
                 );
             });
 
+            describe('updateArtistAccount', function () {
+
+                it('can be updated by whitelist', async function () {
+                    let currentArtistEditions = await this.token.artistsEditions(artistAccountOne);
+                    currentArtistEditions.map(e => e.toString()).should.be.deep.equal([editionOneId.toString()]);
+
+                    let newArtistEditions = await this.token.artistsEditions(artistAccountTwo);
+                    newArtistEditions.map(e => e.toString()).should.be.deep.equal([]);
+
+                    await this.token.updateArtistAccount(editionOneId, artistAccountTwo, {from: creator});
+
+                    currentArtistEditions = await this.token.artistsEditions(artistAccountOne);
+                    currentArtistEditions.map(e => e.toString()).should.be.deep.equal(["0"]);
+
+                    newArtistEditions = await this.token.artistsEditions(artistAccountTwo);
+                    newArtistEditions.map(e => e.toString()).should.be.deep.equal([editionOneId.toString()]);
+                });
+
+                it('should fail when not whitelisted', async function () {
+                    await shouldFail.reverting(
+                        this.token.updateArtistAccount(editionOneId, artistAccountTwo, {from: tokenOwnerOne})
+                    );
+                });
+            });
         });
 
         describe('gas costing for createEdition()', async function () {
