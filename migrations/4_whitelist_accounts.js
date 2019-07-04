@@ -11,4 +11,7 @@ module.exports = async function (deployer, network, accounts) {
     // Marks Ledger
     await renderToken.addWhitelisted("0xC173b11Ec24885f404Ba400b6a042e02FfC57632", {from: getAccountOne(accounts, network)});
 
+    // Marks Metamask
+    await renderToken.addWhitelisted("0x712662f85975D6C4c5Ac66ef78503eB912186362", {from: getAccountOne(accounts, network)});
+
 };
