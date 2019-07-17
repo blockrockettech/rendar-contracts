@@ -10,13 +10,13 @@ function shouldBehaveLikeERC721(
     [owner, approved, anotherApproved, operator, anyone]
 ) {
 
-    const editionId = new BN(1000);
+    const editionId = new BN(10000);
     const editionPrice = ether('1');
     const artistAccount = operator;
 
-    const firstTokenId = new BN(1000);
-    const secondTokenId = new BN(1001);
-    const unknownTokenId = new BN(999);
+    const firstTokenId = new BN(10000);
+    const secondTokenId = new BN(10001);
+    const unknownTokenId = new BN(99999);
     const tokenURI = '123abc456def987';
 
     const RECEIVER_MAGIC_VALUE = '0x150b7a02';

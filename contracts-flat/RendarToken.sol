@@ -1007,9 +1007,8 @@ contract RendarToken is CustomERC721Metadata, WhitelistedRole {
         string tokenURI;                // NFT token metadata URL
     }
 
-    // FIXME should this be configurable?
     // Edition step
-    uint256 public editionStep = 1000;
+    uint256 public editionStep = 10000;
 
     // A count of the total number of token minted
     uint256 public totalTokensMinted;
@@ -1137,7 +1136,7 @@ contract RendarToken is CustomERC721Metadata, WhitelistedRole {
         uint256 remainingInEdition = editionIdToEditionDetails[_editionId].editionSize - editionIdToEditionDetails[_editionId].editionSupply;
         require(remainingInEdition >= _total, "Not enough left in edition");
 
-        uint256[] memory tokens;
+        uint256[] memory tokens = new uint256[](_total);
         for (uint i = 0; i < _total; i++) {
             tokens[i] = _internalMint(_to, _editionId);
         }

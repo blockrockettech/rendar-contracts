@@ -25,12 +25,12 @@ contract('Rendar Token Tests', function ([_, creator, tokenOwnerOne, tokenOwnerT
 
     describe('creating editions', async function () {
 
-        const editionOneId = new BN('1000');
+        const editionOneId = new BN('10000');
         const editionSize = new BN('10');
         const commission = new BN('10');
 
-        const tokenIdOne = new BN('1000');
-        const tokenIdTwo = new BN('1001');
+        const tokenIdOne = new BN('10000');
+        const tokenIdTwo = new BN('10001');
 
         describe('can create an edition', async function () {
 
@@ -133,8 +133,8 @@ contract('Rendar Token Tests', function ([_, creator, tokenOwnerOne, tokenOwnerT
             const editionSize = new BN('100');
             const commission = new BN('10');
 
-            const editionTwoId = new BN('2000');
-            const editionTwoTokenIdOne = new BN('2000');
+            const editionTwoId = new BN('20000');
+            const editionTwoTokenIdOne = new BN('20000');
 
             beforeEach(async function () {
                 await this.token.createEdition(
@@ -427,7 +427,7 @@ contract('Rendar Token Tests', function ([_, creator, tokenOwnerOne, tokenOwnerT
             it('cant create edition size of more than the step', async function () {
                 await shouldFail.reverting.withMessage(
                     this.token.createEdition(
-                        new BN('1001'),
+                        new BN('10001'),
                         editionPrice,
                         commission,
                         artistAccountOne,
@@ -603,7 +603,7 @@ contract('Rendar Token Tests', function ([_, creator, tokenOwnerOne, tokenOwnerT
                     await this.token.updateArtistAccount(editionOneId, artistAccountTwo, {from: creator});
 
                     currentArtistEditions = await this.token.artistsEditions(artistAccountOne);
-                    currentArtistEditions.map(e => e.toString()).should.be.deep.equal(["0"]);
+                    currentArtistEditions.map(e => e.toString()).should.be.deep.equal(['0']);
 
                     newArtistEditions = await this.token.artistsEditions(artistAccountTwo);
                     newArtistEditions.map(e => e.toString()).should.be.deep.equal([editionOneId.toString()]);
@@ -628,7 +628,7 @@ contract('Rendar Token Tests', function ([_, creator, tokenOwnerOne, tokenOwnerT
                     {from: creator}
                 );
                 expectEvent.inLogs(logs, 'EditionCreated', {
-                    _editionId: new BN('1000')
+                    _editionId: new BN('10000')
                 });
             });
         });
@@ -636,7 +636,7 @@ contract('Rendar Token Tests', function ([_, creator, tokenOwnerOne, tokenOwnerT
 
     describe('minting editions', async function () {
 
-        const editionId = new BN('1000');
+        const editionId = new BN('10000');
         const editionSize = new BN('5');
 
         beforeEach(async function () {
@@ -681,13 +681,13 @@ contract('Rendar Token Tests', function ([_, creator, tokenOwnerOne, tokenOwnerT
                 expectEvent.inLogs(logs, 'Transfer', {
                     from: ZERO_ADDRESS,
                     to: creator,
-                    tokenId: new BN('1000')
+                    tokenId: new BN('10000')
                 });
             });
 
             it('can generate tokenURI() for token', async function () {
                 await this.token.mint(editionId, {from: creator});
-                const tokenURI = await this.token.tokenURI(new BN('1000'));
+                const tokenURI = await this.token.tokenURI(new BN('10000'));
                 tokenURI.should.be.equal('https://ipfs.infura.io/ipfs/123abc456def987');
             });
 
@@ -710,7 +710,7 @@ contract('Rendar Token Tests', function ([_, creator, tokenOwnerOne, tokenOwnerT
 
     describe('purchasing editions', async function () {
 
-        const editionId = new BN('1000');
+        const editionId = new BN('10000');
         const editionSize = new BN('2');
         const artistCommission = new BN('50');
 
@@ -770,7 +770,7 @@ contract('Rendar Token Tests', function ([_, creator, tokenOwnerOne, tokenOwnerT
             });
 
             it('once purchased you owned the token', async function () {
-                const tokenId = new BN('1000');
+                const tokenId = new BN('10000');
 
                 const {logs} = await this.token.purchase(editionId, {from: buyer, value: ether('1')});
                 expectEvent.inLogs(logs, 'Transfer', {
@@ -896,7 +896,7 @@ contract('Rendar Token Tests', function ([_, creator, tokenOwnerOne, tokenOwnerT
             });
 
             it('once purchased you owned the token', async function () {
-                const tokenId = new BN('1000');
+                const tokenId = new BN('10000');
 
                 const {logs} = await this.token.purchaseTo(buyer, editionId, {from: buyer, value: ether('1')});
                 expectEvent.inLogs(logs, 'Transfer', {
@@ -972,7 +972,7 @@ contract('Rendar Token Tests', function ([_, creator, tokenOwnerOne, tokenOwnerT
 
     describe('adminBurn()', async function () {
 
-        const editionId = new BN('1000');
+        const editionId = new BN('10000');
         const buyer = tokenOwnerOne;
 
         beforeEach(async function () {
@@ -987,7 +987,7 @@ contract('Rendar Token Tests', function ([_, creator, tokenOwnerOne, tokenOwnerT
         });
 
         it('can burn token as admin when not owner', async function () {
-            const tokenId = new BN('1000');
+            const tokenId = new BN('10000');
 
             const {logs} = await this.token.purchaseTo(buyer, editionId, {from: buyer, value: ether('1')});
             expectEvent.inLogs(logs, 'Transfer', {
@@ -1016,6 +1016,39 @@ contract('Rendar Token Tests', function ([_, creator, tokenOwnerOne, tokenOwnerT
 
             tokensOfOwner = await this.token.tokensOfOwner(buyer);
             tokensOfOwner.should.be.deep.equal([]);
+        });
+
+    });
+
+    describe('mintMultipleTo()', async function () {
+
+        const editionOneId = new BN('10000');
+        const editionSize = new BN('100');
+        const commission = new BN('10');
+
+        beforeEach(async function () {
+            await this.token.createEdition(
+                editionSize,
+                editionPrice,
+                commission,
+                artistAccountOne,
+                tokenURI,
+                {from: creator}
+            );
+        });
+
+        it('can batch mint', async function () {
+
+            let balanceOf = await this.token.balanceOf(tokenOwnerOne);
+            balanceOf.should.be.bignumber.equal('0');
+
+            await this.token.mintMultipleTo(tokenOwnerOne, editionOneId, new BN('2'), {from: creator});
+
+            balanceOf = await this.token.balanceOf(tokenOwnerOne);
+            balanceOf.should.be.bignumber.equal('2');
+
+            const tokensOfOwner = await this.token.tokensOfOwner(tokenOwnerOne);
+            tokensOfOwner.map(t => t.toString()).should.be.deep.equal(['10000', '10001']);
         });
 
     });
