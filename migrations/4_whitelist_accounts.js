@@ -8,10 +8,7 @@ module.exports = async function (deployer, network, accounts) {
     // BlockRocket Accounts
     await renderToken.addWhitelisted("0x04AeC888Fa635c54661581d7bb2CF337c2f1f98F", {from: getAccountOne(accounts, network)});
 
-    // Marks Ledger
-    await renderToken.addWhitelisted("0xC173b11Ec24885f404Ba400b6a042e02FfC57632", {from: getAccountOne(accounts, network)});
-
-    // Marks Metamask
-    await renderToken.addWhitelisted("0x712662f85975D6C4c5Ac66ef78503eB912186362", {from: getAccountOne(accounts, network)});
+    // Marks Account
+    await renderToken.addWhitelisted("0x4FF3Eb0a7f68D6eB80fCf5039032ec927131eF2e", {from: getAccountOne(accounts, network)});
 
 };
