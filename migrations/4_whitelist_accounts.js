@@ -11,4 +11,7 @@ module.exports = async function (deployer, network, accounts) {
     // Marks Account
     await renderToken.addWhitelisted("0x4FF3Eb0a7f68D6eB80fCf5039032ec927131eF2e", {from: getAccountOne(accounts, network)});
 
+    // Marks Account
+    await renderToken.addWhitelistAdmin("0x4FF3Eb0a7f68D6eB80fCf5039032ec927131eF2e", {from: getAccountOne(accounts, network)});
+
 };
