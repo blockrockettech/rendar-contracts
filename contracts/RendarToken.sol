@@ -212,6 +212,27 @@ contract RendarToken is CustomERC721Metadata, WhitelistedRole {
         address payable _artistAccount,
         string memory _tokenURI
     ) public onlyWhitelisted returns (bool _created) {
+        return _createEdition(_editionSize, _priceInWei, _artistCommission, _artistAccount, _tokenURI, true);
+    }
+
+    function createEditionInactive(
+        uint256 _editionSize,
+        uint256 _priceInWei,
+        uint256 _artistCommission,
+        address payable _artistAccount,
+        string memory _tokenURI
+    ) public onlyWhitelisted returns (bool _created) {
+        return _createEdition(_editionSize, _priceInWei, _artistCommission, _artistAccount, _tokenURI, false);
+    }
+
+    function _createEdition(
+        uint256 _editionSize,
+        uint256 _priceInWei,
+        uint256 _artistCommission,
+        address payable _artistAccount,
+        string memory _tokenURI,
+        bool active
+    ) internal returns (bool _created){
 
         // Guards for edition creation logic
         require(_editionSize > 0 && _editionSize <= editionStep, "Edition size invalid");
@@ -226,11 +247,11 @@ contract RendarToken is CustomERC721Metadata, WhitelistedRole {
         editionIdToEditionDetails[_editionId] = EditionDetails(
             _editionId,
             _editionSize,
-            0, // default non purchased
+            0, // default zero purchased
             _priceInWei,
             _artistCommission,
             _artistAccount,
-            true, // default active
+            active,
             _tokenURI
         );
 

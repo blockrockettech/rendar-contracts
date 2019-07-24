@@ -19,7 +19,7 @@ contract('Rendar Token Tests', function ([_, creator, tokenOwnerOne, tokenOwnerT
         });
         it('symbol()', async function () {
             const symbol = await this.token.symbol();
-            symbol.should.be.equal('RNDR');
+            symbol.should.be.equal('RDR');
         });
     });
 
@@ -631,6 +631,102 @@ contract('Rendar Token Tests', function ([_, creator, tokenOwnerOne, tokenOwnerT
                     _editionId: new BN('10000')
                 });
             });
+        });
+
+        describe('can create an inactive edition', async function () {
+
+            beforeEach(async function () {
+                await this.token.createEditionInactive(
+                    editionSize,
+                    editionPrice,
+                    commission,
+                    artistAccountOne,
+                    tokenURI,
+                    {from: creator}
+                );
+            });
+
+            it('allEditions()', async function () {
+                const allEditions = await this.token.allEditions();
+                allEditions.should.have.length(1);
+                allEditions[0].should.be.bignumber.equal(editionOneId);
+            });
+
+            it('totalRemaining()', async function () {
+                const totalRemaining = await this.token.totalRemaining(editionOneId);
+                totalRemaining.should.be.bignumber.equal('10');
+            });
+
+            it('editionTokenUri()', async function () {
+                const editionTokenUri = await this.token.editionTokenUri(editionOneId);
+                editionTokenUri.should.be.equal('https://ipfs.infura.io/ipfs/123abc456def987');
+            });
+
+            it('highestEditionNumber()', async function () {
+                const highestEditionNumber = await this.token.highestEditionNumber();
+                highestEditionNumber.should.be.bignumber.equal(editionOneId);
+            });
+
+            it('totalTokensMinted()', async function () {
+                const totalTokensMinted = await this.token.totalTokensMinted();
+                totalTokensMinted.should.be.bignumber.equal('0');
+            });
+
+            it('editionSize()', async function () {
+                const editionSize = await this.token.editionSize(editionOneId);
+                editionSize.should.be.bignumber.equal(editionSize);
+            });
+
+            it('editionSupply()', async function () {
+                const editionSupply = await this.token.editionSupply(editionOneId);
+                editionSupply.should.be.bignumber.equal('0');
+            });
+
+            it('artistCommission()', async function () {
+                const artistCommission = await this.token.artistCommission(editionOneId);
+                artistCommission.should.be.bignumber.equal(commission);
+            });
+
+            it('artistAccount()', async function () {
+                const artistAccount = await this.token.artistAccount(editionOneId);
+                artistAccount.should.be.equal(artistAccountOne);
+            });
+
+            it('active()', async function () {
+                const active = await this.token.active(editionOneId);
+                active.should.be.equal(false);
+            });
+
+            it('editionPrice()', async function () {
+                const editionPrice = await this.token.editionPrice(editionOneId);
+                editionPrice.should.be.bignumber.equal(editionPrice);
+            });
+
+            it('artistInfo()', async function () {
+                const {_artistAccount, _artistCommission} = await this.token.artistInfo(editionOneId);
+                _artistAccount.should.be.equal(artistAccountOne);
+                _artistCommission.should.be.bignumber.equal(commission);
+            });
+
+            it('editionDetails()', async function () {
+                const {
+                    _editionSize,
+                    _editionSupply,
+                    _priceInWei,
+                    _artistCommission,
+                    _artistAccount,
+                    _active,
+                    _tokenURI
+                } = await this.token.editionDetails(editionOneId);
+                _editionSize.should.be.bignumber.equal(editionSize);
+                _editionSupply.should.be.bignumber.equal('0');
+                _priceInWei.should.be.bignumber.equal(editionPrice);
+                _artistCommission.should.be.bignumber.equal(commission);
+                _artistAccount.should.be.equal(artistAccountOne);
+                _tokenURI.should.be.equal('https://ipfs.infura.io/ipfs/123abc456def987');
+                _active.should.be.equal(false);
+            });
+
         });
     });
 
