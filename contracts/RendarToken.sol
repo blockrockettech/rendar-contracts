@@ -92,7 +92,7 @@ contract RendarToken is CustomERC721Metadata, WhitelistedRole {
     // Constructor //
     /////////////////
 
-    constructor(address payable _rendarAddress) CustomERC721Metadata("RendarToken", "RNDR") public {
+    constructor(address payable _rendarAddress) CustomERC721Metadata("RendarToken", "RDR") public {
         super.addWhitelisted(msg.sender);
         rendarAddress = _rendarAddress;
     }
