@@ -19,6 +19,7 @@
     "npm": "^6.9.0"
   },
   "devDependencies": {
+    "lodash": "^4.17.15",
     "openzeppelin-solidity": "2.1.2",
     "openzeppelin-test-helpers": "0.1.2",
     "solidity-coverage": "github:rotcivegaf/solidity-coverage",
