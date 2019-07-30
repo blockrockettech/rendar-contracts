@@ -1064,6 +1064,140 @@ contract('Rendar Token Tests', function ([_, creator, tokenOwnerOne, tokenOwnerT
             });
         });
 
+        describe('can purchase edition of zero commission', async function () {
+
+            beforeEach(async function () {
+                await this.token.createEdition(
+                    editionSize,
+                    editionPrice,
+                    0, // commission
+                    artistAccountOne,
+                    tokenURI,
+                    {from: creator}
+                );
+            });
+
+            it('funds are split accordingly', async function () {
+                const cost = ether('1');
+
+                const prePurchaseBuyerBalance = await balance.current(buyer);
+                const prePurchaseArtistsBalance = await balance.current(artistAccountOne);
+                const prePurchaseRendarBalance = await balance.current(rendarAccount);
+
+                const receipt = await this.token.purchaseTo(buyer, editionId, {from: buyer, value: cost});
+                const gasCosts = await getGasCosts(receipt);
+
+                // check buyer sends monies
+                const postPurchaseBuyerBalance = await balance.current(buyer);
+                postPurchaseBuyerBalance.should.bignumber.equal(
+                    prePurchaseBuyerBalance
+                        .sub(cost)
+                        .sub(gasCosts)
+                );
+
+                //check render gets 0%
+                const postPurchaseArtistsBalance = await balance.current(artistAccountOne);
+                postPurchaseArtistsBalance.should.be.bignumber.equal(
+                    prePurchaseArtistsBalance
+                );
+
+                //check artist gets 100%
+                const postPurchaseRendarBalance = await balance.current(rendarAccount);
+                postPurchaseRendarBalance.should.be.bignumber.equal(
+                    prePurchaseRendarBalance.add(
+                        ether('1')
+                    )
+                );
+            });
+
+        });
+
+        describe('can purchase edition of zero price', async function () {
+
+            beforeEach(async function () {
+                await this.token.createEdition(
+                    editionSize,
+                    0, // price
+                    artistCommission,
+                    artistAccountOne,
+                    tokenURI,
+                    {from: creator}
+                );
+            });
+
+            it('funds are split accordingly', async function () {
+
+                const prePurchaseBuyerBalance = await balance.current(buyer);
+                const prePurchaseArtistsBalance = await balance.current(artistAccountOne);
+                const prePurchaseRendarBalance = await balance.current(rendarAccount);
+
+                const receipt = await this.token.purchaseTo(buyer, editionId, {from: buyer});
+                const gasCosts = await getGasCosts(receipt);
+
+                // check buyer sends monies
+                const postPurchaseBuyerBalance = await balance.current(buyer);
+                postPurchaseBuyerBalance.should.bignumber.equal(
+                    prePurchaseBuyerBalance
+                        .sub(gasCosts)
+                );
+
+                //check render gets no value
+                const postPurchaseArtistsBalance = await balance.current(artistAccountOne);
+                postPurchaseArtistsBalance.should.be.bignumber.equal(
+                    prePurchaseArtistsBalance
+                );
+
+                //check artist gets no value
+                const postPurchaseRendarBalance = await balance.current(rendarAccount);
+                postPurchaseRendarBalance.should.be.bignumber.equal(
+                    prePurchaseRendarBalance
+                );
+            });
+        });
+
+        describe('can purchase edition of zero price and zero commission', async function () {
+
+            beforeEach(async function () {
+                await this.token.createEdition(
+                    editionSize,
+                    0, // price
+                    0, // commission
+                    artistAccountOne,
+                    tokenURI,
+                    {from: creator}
+                );
+            });
+
+
+            it('funds are split accordingly', async function () {
+
+                const prePurchaseBuyerBalance = await balance.current(buyer);
+                const prePurchaseArtistsBalance = await balance.current(artistAccountOne);
+                const prePurchaseRendarBalance = await balance.current(rendarAccount);
+
+                const receipt = await this.token.purchaseTo(buyer, editionId, {from: buyer});
+                const gasCosts = await getGasCosts(receipt);
+
+                // check buyer sends monies
+                const postPurchaseBuyerBalance = await balance.current(buyer);
+                postPurchaseBuyerBalance.should.bignumber.equal(
+                    prePurchaseBuyerBalance
+                        .sub(gasCosts)
+                );
+
+                //check render gets no value
+                const postPurchaseArtistsBalance = await balance.current(artistAccountOne);
+                postPurchaseArtistsBalance.should.be.bignumber.equal(
+                    prePurchaseArtistsBalance
+                );
+
+                //check artist gets no value
+                const postPurchaseRendarBalance = await balance.current(rendarAccount);
+                postPurchaseRendarBalance.should.be.bignumber.equal(
+                    prePurchaseRendarBalance
+                );
+            });
+        });
     });
 
     describe('adminBurn()', async function () {
@@ -1145,6 +1279,14 @@ contract('Rendar Token Tests', function ([_, creator, tokenOwnerOne, tokenOwnerT
 
             const tokensOfOwner = await this.token.tokensOfOwner(tokenOwnerOne);
             tokensOfOwner.map(t => t.toString()).should.be.deep.equal(['10000', '10001']);
+        });
+
+
+        it('cant batch mint more than edition size', async function () {
+            await shouldFail.reverting.withMessage(
+                this.token.mintMultipleTo(tokenOwnerOne, editionOneId, new BN('101'), {from: creator}),
+                'Not enough left in edition'
+            );
         });
 
     });

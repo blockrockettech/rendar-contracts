@@ -4,8 +4,7 @@ const RendarToken = artifacts.require('./RendarToken.sol');
 
 module.exports = async function (deployer, network, accounts) {
 
-    // TODO replace with real Rendar account
-    const rendarAccount = '0x960078cd5b720c8e449629f37cb78f0b552b008b';
+    const rendarAccount = '0x4FF3Eb0a7f68D6eB80fCf5039032ec927131eF2e';
 
     await deployer.deploy(RendarToken, rendarAccount, {from: getAccountOne(accounts, network)});
 };
