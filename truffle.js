@@ -52,5 +52,15 @@ module.exports = {
             gasPrice: 4000000000, // default = 100 gwei = 100000000000
             skipDryRun: true
         },
+        live: {
+            provider: function () {
+                return new HDWalletProvider(MNEMONIC, `https://mainnet.infura.io/v3/${INFURA_KEY}`);
+            },
+            network_id: 1,
+            gas: 6075039,         // default = 4712388
+            gasPrice: 4100000000, // default = 100 gwei = 100000000000
+            timeoutBlocks: 200,   // # of blocks before a deployment times out  (minimum/default: 50)
+            skipDryRun: true      // Skip dry run before migrations? (default: false for public nets )
+        },
     }
 };
