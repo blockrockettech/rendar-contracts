@@ -14,9 +14,7 @@
   "author": "james.morgan@blockrocket.tech",
   "license": "MIT",
   "dependencies": {
-    "eth-gas-reporter": "^0.2.0",
-    "i": "^0.3.6",
-    "npm": "^6.9.0"
+    "eth-gas-reporter": "^0.2.8"
   },
   "devDependencies": {
     "lodash": "^4.17.15",
