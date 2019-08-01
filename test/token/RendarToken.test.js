@@ -783,8 +783,19 @@ contract('Rendar Token Tests', function ([_, creator, tokenOwnerOne, tokenOwnerT
 
             it('can generate tokenURI() for token', async function () {
                 await this.token.mint(editionId, {from: creator});
-                const tokenURI = await this.token.tokenURI(new BN('10000'));
-                tokenURI.should.be.equal('https://ipfs.infura.io/ipfs/123abc456def987');
+                (await this.token.tokenURI(new BN('10000'))).should.be.equal('https://ipfs.infura.io/ipfs/123abc456def987');
+
+                await this.token.mint(editionId, {from: creator});
+                (await this.token.tokenURI(new BN('10001'))).should.be.equal('https://ipfs.infura.io/ipfs/123abc456def987');
+
+                await this.token.mint(editionId, {from: creator});
+                (await this.token.tokenURI(new BN('10002'))).should.be.equal('https://ipfs.infura.io/ipfs/123abc456def987');
+
+                await this.token.mint(editionId, {from: creator});
+                (await this.token.tokenURI(new BN('10003'))).should.be.equal('https://ipfs.infura.io/ipfs/123abc456def987');
+
+                await this.token.mint(editionId, {from: creator});
+                (await this.token.tokenURI(new BN('10004'))).should.be.equal('https://ipfs.infura.io/ipfs/123abc456def987');
             });
 
             it('fails to get tokenDetails() when token does not exists', async function () {

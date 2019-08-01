@@ -1346,7 +1346,8 @@ contract RendarToken is CustomERC721Metadata, WhitelistedRole {
     external view
     onlyValidTokenId(_tokenId)
     returns (string memory) {
-        return Strings.strConcat(tokenBaseURI, editionIdToEditionDetails[_tokenId].tokenURI);
+        uint256 editionId = tokenIdToEditionId[_tokenId];
+        return Strings.strConcat(tokenBaseURI, editionIdToEditionDetails[editionId].tokenURI);
     }
 
     function editionTokenUri(uint256 _editionId)
