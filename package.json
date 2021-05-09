@@ -17,7 +17,7 @@
     "eth-gas-reporter": "^0.2.8"
   },
   "devDependencies": {
-    "lodash": "^4.17.15",
+    "lodash": "^4.17.21",
     "openzeppelin-solidity": "2.1.2",
     "openzeppelin-test-helpers": "0.1.2",
     "solidity-coverage": "github:rotcivegaf/solidity-coverage",
